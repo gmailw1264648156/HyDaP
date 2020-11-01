@@ -1,0 +1,445 @@
+---
+title: "HyDaP algorithm in R"
+author: "Shu Wang"
+output: html_document
+---
+
+
+</br>
+</br>
+
+####  This is a brief tutorial of using the HyDaP algorithm to cluster mixed data. Three simulated data sets that represent three data structures are generated first. Then we analyze each of them to obtain final clustering results.
+
+</br>
+</br>
+
+## <span style="color:blue">Three Working Data Sets</span>
+
+```{r,echo=F,message=F,warning=F}
+
+library(questionr)
+
+library(sparcl)
+
+library(mclust)
+
+library(cluster)
+
+library(DataCombine)
+
+library(klaR)
+
+library(dbscan)
+
+library(ConsensusClusterPlus)
+
+source('C:/Users/swang0221/Downloads/R/HyDaP function.R')
+
+
+n1<- 40
+
+n2<- 40
+
+n3<- 120
+
+# --- data 1
+  
+set.seed(123456)
+  
+# set up data
+  
+# x1
+  
+x11<-rnorm(n1,-2,2)
+x12<-rnorm(n2, 2,2)
+x13<-rnorm(n3, 6,2)
+  
+# x2
+  
+x21<-rnorm(n1,20,1)
+x22<-rnorm(n2,25,1)
+x23<-rnorm(n3,18,1)
+  
+# x3
+  
+x31<-rnorm(n1,0,1)
+x32<-rnorm(n2,-7,1)
+x33<-rnorm(n3,4,1)
+  
+# x4
+  
+x41<-rnorm(n1,0,1)
+x42<-rnorm(n2,0,1)
+x43<-rnorm(n3,0,1)
+  
+# x5
+  
+x51<-sample(c(2,1,0),n1,prob=c(0.1,0.1,0.8),replace=T)
+x52<-sample(c(2,1,0),n2,prob=c(0.1,0.8,0.1),replace=T)
+x53<-sample(c(2,1,0),n3,prob=c(0.8,0.1,0.1),replace=T)
+  
+# combine data together
+  
+variables<-list()
+  
+for(i in 1:5){
+    
+  variables[[i]]<-c(unlist(lapply( paste0("x",i, 1:3) , get) ))
+    
+}
+
+# names of variables are : x1,x2,x3,...
+  
+data1<-do.call('data.frame',variables)
+  
+names(data1)<-unlist(lapply(1:5, function(y) paste0('x',y)))
+  
+data1$x5<- as.factor(data1$x5)
+  
+# --- data 2
+  
+set.seed(123456)
+  
+# x1
+  
+x11<-rnorm(n1,-2,2)
+x12<-rnorm(n2, -1,2)
+x13<-rnorm(n3, 0,2)
+  
+# x2
+  
+x21<-rnorm(n1,20,1)
+x22<-rnorm(n2,24,1)
+x23<-rnorm(n3,21,1)
+  
+# x3
+  
+x31<-rnorm(n1,5,1)
+x32<-rnorm(n2,8,1)
+x33<-rnorm(n3,7,1)
+  
+# x4
+  
+x41<-rnorm(n1,0,1)
+x42<-rnorm(n2,0,1)
+x43<-rnorm(n3,0,1)
+  
+# x5
+  
+x51<-rnorm(n1,40,1)
+x52<-rnorm(n2,40,1)
+x53<-rnorm(n3,40,1)
+  
+# x6
+  
+x61<-rnorm(n1,0,1)
+x62<-rnorm(n2,0,1)
+x63<-rnorm(n3,0,1)
+  
+# x7
+  
+x71<-rnorm(n1,0,1)
+x72<-rnorm(n2,0,1)
+x73<-rnorm(n3,0,1)
+  
+# x8
+  
+x81<-rnorm(n1,0,1)
+x82<-rnorm(n2,0,1)
+x83<-rnorm(n3,0,1)
+  
+# x9
+  
+x91<-rnorm(n1,-1,1)
+x92<-rnorm(n2,1,1)
+x93<-rnorm(n3,-2,1)
+  
+# x10
+  
+x101<-rnorm(n1,0,1)
+x102<-rnorm(n2,-1,1)
+x103<-rnorm(n3,2,1)
+  
+# x11
+  
+x111<-rnorm(n1,2,1)
+x112<-rnorm(n2,1,1)
+x113<-rnorm(n3,0,1)
+  
+# x12
+  
+x121<-sample(c(0,1,2),n1,prob=c(0.3,0.3,0.4),replace=T)
+x122<-sample(c(0,1,2),n2,prob=c(0.4,0.3,0.3),replace=T)
+x123<-sample(c(0,1,2),n3,prob=c(0.3,0.4,0.3),replace=T)
+  
+# x13
+  
+x131<-sample(c(4,5,6),n1,prob=c(0.9,0.05,0.05),replace=T)
+x132<-sample(c(4,5,6),n2,prob=c(0.05,0.9,0.05),replace=T)
+x133<-sample(c(4,5,6),n3,prob=c(0.05,0.05,0.9),replace=T)
+  
+# x14
+  
+x141<-sample(c(0,1,2),n1,prob=c(0.05,0.05,0.9),replace=T)
+x142<-sample(c(0,1,2),n2,prob=c(0.05,0.9,0.05),replace=T)
+x143<-sample(c(0,1,2),n3,prob=c(0.9,0.05,0.05),replace=T)
+  
+variables<-list()
+  
+for(i in 1:14){
+    
+  variables[[i]]<-c(unlist(lapply( paste0("x",i, 1:3) , get) ))
+    
+}
+  
+# names of variables are : x1,x2,x3,...
+  
+data2<-do.call('data.frame',variables)
+  
+names(data2)<-unlist(lapply(1:14, function(y) paste0('x',y)))
+  
+data2$x12<- as.factor(data2$x12)
+  
+data2$x13<- as.factor(data2$x13)
+  
+data2$x14<- as.factor(data2$x14)
+  
+# --- data 3
+
+set.seed(123456)
+
+# x1
+  
+x11<-rnorm(n1,0,0.5)
+x12<-rnorm(n2, 0,0.5)
+x13<-rnorm(n3, 0,0.5)
+  
+# x2
+  
+x21<-rnorm(n1,-3,1)
+x22<-rnorm(n2,-3,1)
+x23<-rnorm(n3,-3,1)
+  
+# x3
+  
+x31<-rnorm(n1,4,2)
+x32<-rnorm(n2,4,2)
+x33<-rnorm(n3,4,2)
+  
+# x4
+  
+x41<-rnorm(n1,0,1)
+x42<-rnorm(n2,0,1)
+x43<-rnorm(n3,0,1)
+  
+# x5
+  
+x51<-sample(c(0,1,2),n1,prob=c(0.05,0.05,0.9),replace=T)
+x52<-sample(c(0,1,2),n2,prob=c(0.05,0.9,0.05),replace=T)
+x53<-sample(c(0,1,2),n3,prob=c(0.9,0.05,0.05),replace=T)
+  
+# x6
+  
+x61<-sample(c(0,1,2),n1,prob=c(0.3,0.3,0.4),replace=T)
+x62<-sample(c(0,1,2),n2,prob=c(0.4,0.3,0.3),replace=T)
+x63<-sample(c(0,1,2),n3,prob=c(0.3,0.4,0.3),replace=T)
+  
+# x7
+  
+x71<-sample(c(4,5,6),n1,prob=c(0.9,0.05,0.05),replace=T)
+x72<-sample(c(4,5,6),n2,prob=c(0.05,0.9,0.05),replace=T)
+x73<-sample(c(4,5,6),n3,prob=c(0.05,0.05,0.9),replace=T)
+  
+# combine data together
+  
+variables<-list()
+  
+for(i in 1:7){
+    
+ variables[[i]]<-c(unlist(lapply( paste0("x",i, 1:3) , get) ))
+    
+}
+  
+# names of variables are : x1,x2,x3,...
+  
+data3<-do.call('data.frame',variables)
+  
+names(data3)<-unlist(lapply(1:7, function(y) paste0('x',y)))
+  
+data3$x5<- as.factor(data3$x5)
+  
+data3$x6<- as.factor(data3$x6)
+  
+data3$x7<- as.factor(data3$x7)
+
+save(data1, file = 'C:/Users/swang0221/Downloads/man/data1.rdata')
+
+save(data2, file = 'C:/Users/swang0221/Downloads/man/data2.rdata')
+
+save(data3, file = 'C:/Users/swang0221/Downloads/man/data3.rdata')
+```
+
+```{r,echo=T,message=F,warning=F}
+
+dat<- list(data1, data2, data3)
+
+lapply(dat, dim)
+
+lapply(dat, summary)
+
+```
+
+#### Each simulated data set contains 200 observations. Data 1 is consists of 4 continuous variables and 1 categorical variable. Data 2 is consists of 11 continuous variables and 3 categorical variables. Data 3 is consists of 4 continuous variables and 3 categorical variables. Three clusters exist in each of these data sets.
+
+</br>
+</br>
+
+## <span style="color:blue">Step 1 Data Structure Identification and Variable Selection</span>
+
+### Run OPTICS on continuous variables to obtain a reachability plot
+
+```{r,echo=T,message=F,warning=F}
+
+op<- optics(data1[,1:4],eps = 10,minPts = 10) # relative larger eps and minPts
+
+plot(op, main='Data 1')
+
+
+op<- optics(data2[,1:11],eps = 10,minPts = 20) # relative larger eps and minPts
+
+plot(op, main='Data 2')
+
+
+op<- optics(data3[,1:4],eps = 10,minPts = 10) # relative larger eps and minPts
+
+plot(op, main='Data 3')
+
+```
+
+####  From 3 reachability plot we can observe that only data 1 displays 3 "vallies" indicating that data 1 belongs to *natural cluster structure*. Data 2 and 3 belongs to *partitioned cluster structure* or *homogeneous structure*.
+
+### Run Sparse k-means for data 1 and consensus k-means for data 2 and 3
+
+```{r,echo=T,message=F,warning=F}
+
+data_run<- scale(data1[,-5],T,T) # scale is recommended
+  
+tune<- KMeansSparseCluster.permute(as.matrix(data_run),K=3,wbounds=seq(1.1, 3.1, by=0.3),silent = T)
+  
+sparsek<- KMeansSparseCluster(as.matrix(data_run),K=3,wbounds = tune$bestw,silent = T)
+  
+sparsek[1][[1]]$ws
+
+cramer.v(table(data1$x5,sparsek[1][[1]]$Cs)) 
+
+```
+
+#### From obtained weights, it's not that hard to drop variable $x_4$. Based on the cramer's V between variable $x_5$ and sparse k-means clustering assignment, $x_5$ will be kept. Therefore, $x_1$, $x_2$, $x_3$, and $x_5$ will be kept in final clustering step. 
+
+```{r,echo=F,message=F,warning=F,error=F}
+
+path<- 'P:/Pitt'
+
+```
+
+```{r,echo=T,message=F,warning=F,error=F}
+
+data2.new<- t(scale(data2[,1:11],T,T))
+
+results.dat2<-  ConsensusClusterPlus(as.matrix(data2.new),maxK=6,reps=1000,pItem=0.8,pFeature=1,
+                               clusterAlg="km",distance="euclidean",seed=1262,plot='png',
+                               title=paste0(path,'/hydapDat2'))
+  
+#results2.dat2<- calcICL(results.dat2, plot='png',title=paste0(path,'/hydapDat2'))
+
+```
+
+```{r, eval=T,echo=F,message=FALSE, error=FALSE,fig.align='center',out.width='120%'}
+
+knitr::include_graphics("P:/Pitt/hydapDat2/con1.png")
+
+knitr::include_graphics("P:/Pitt/hydapDat2/con2.png")
+
+```
+
+#### From consensus k-means results of data 2, we can observe that 3 is the optimal number of clusters. As we are able to partition the continuous part of data 2, it is defined as *partitioned cluster structure*. Therefore, we will keep all continuous variables in final clustering as all of them together lead to partitions.
+
+```{r,echo=T,message=F,warning=F,error=F}
+
+apply(data2[,12:14],2, function(x) cramer.v(table(x,results.dat2[[3]][["consensusClass"]])))
+
+```
+
+#### Based on the cramer's V between each categorical variable and sparse k-means clustering assignment, $x_{12}$ will be dropped in final clustering.
+
+```{r,echo=T,message=F,warning=F,error=F}
+
+data3.new<- t(scale(data3[,1:4],T,T))
+
+results.dat3<-  ConsensusClusterPlus(as.matrix(data3.new),maxK=6,reps=1000,pItem=0.8,pFeature=1,
+                               clusterAlg="km",distance="euclidean",seed=1262,plot='png',
+                               title=paste0(path,'/hydapDat3'))
+  
+#results2.dat3<- calcICL(results.dat3, plot='png',title=paste0(path,'/hydapDat3'))
+
+```
+
+```{r, eval=T,echo=F,message=FALSE, error=FALSE,fig.align='center',out.width='120%'}
+
+knitr::include_graphics("P:/Pitt/hydapDat3/con1.png")
+
+knitr::include_graphics("P:/Pitt/hydapDat3/con2.png")
+
+```
+
+#### From consensus k-means results of data 3, we can observe that none of these numbers is the optimal number of clusters. Therefore, Data 3 is defined as *homogeneous cluster structure* and all continuous variables will be dropped in final clustering.
+
+```{r,echo=T,message=F,warning=F,error=F}
+
+cramer.v(table(data3$x5,data3$x6))
+
+cramer.v(table(data3$x5,data3$x7))
+
+cramer.v(table(data3$x6,data3$x7))
+
+```
+
+#### Based on the pair-wise cramer's V between categorical variables, $x_6$ will be dropped in final clustering.
+
+</br>
+</br>
+
+## <span style="color:blue">Step 2 Final Clustering</span>
+
+```{r,echo=T,message=F,warning=F,error=F}
+
+true_c<- c(rep(1,40),rep(2,40),rep(3,120))
+
+hydap.dat1<- hydap(data=data1[,c(1:3,5)],conti.pos = 1:3,cate.pos = 4,k=3)
+
+adjustedRandIndex(true_c,hydap.dat1$clustering)
+
+hydap.dat2<- hydap(data=data2[,c(1:11,13,14)],conti.pos = 1:11,cate.pos = 12:13,k=3)
+
+adjustedRandIndex(true_c,hydap.dat2$clustering)
+
+hydap.dat3<- hydap(data=data3[,c(5,7)],conti.pos = NULL,cate.pos = 4,k=3)
+
+adjustedRandIndex(true_c,hydap.dat3$clustering)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
