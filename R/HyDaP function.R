@@ -34,9 +34,58 @@ hydap<- function(data,conti.pos=NULL,cate.pos=NULL,k){
   
   if(is.null(conti.pos)){
     
-    output<- kmodes(data,modes=k)
+    pair<-data.frame(combn(n,2))
     
-    warning('As no continuous variable exists in the data, kmodes is used for clustering')
+    gower<-matrix(rep(NA,ncol(pair)*p),ncol=p)
+    
+    for(i in 1:p){
+      
+      a<-data[,i]
+        
+      score<-lapply(pair, function(y){
+          
+      if(a[y[1]]!=a[y[2]]){
+        
+        1
+          }else{0}
+          
+        }) # dissimilarity
+        
+        gower[,i]<-unlist(score)
+      }
+    
+    for(i in 1:p){
+      
+      gower[,i]<- gower[,i]/sum(gower[,i])
+      
+    }
+    
+    # change distance matrix to dist format
+    
+    matrixsum<- unlist(apply(gower,1,mean))
+    
+    ids<- t(pair)
+    
+    matrixsum2<- data.frame(ids,matrixsum)
+    
+    colnames(matrixsum2)<- c('v1','v2','gower_sum')
+    
+    for(j in 1:nrow(data)){
+      
+      new<- c(j,j,0)
+      
+      matrixsum2<- InsertRow(matrixsum2,NewRow = new)
+      
+    }
+    
+    matrixsum3<- matrixsum2[order(matrixsum2[,1],matrixsum2[,2]),]
+    
+    finallist1<- as.dist(xtabs(matrixsum3$gower_sum~matrixsum3$v2+matrixsum3$v1))
+    
+    pam1<- pam(finallist1,k,diss=T)
+    
+    output<- list(clustering=pam1$clustering,
+                  dissMatrix=gower)
     
     
   }else if(is.null(cate.pos)){
@@ -114,7 +163,7 @@ hydap<- function(data,conti.pos=NULL,cate.pos=NULL,k){
     
     colnames(matrixsum2)<- c('v1','v2','gower_sum')
     
-    for(j in 1:nrow(data_s)){
+    for(j in 1:nrow(data)){
       
       new<- c(j,j,0)
       
